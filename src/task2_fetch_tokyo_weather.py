@@ -1,38 +1,53 @@
+from typing import Any, Dict
+
 import requests
-from typing import Dict
 
 try:
-    from .utils import save_to_json
+    from .models import OpenMeteoResponse, TemperatureForecast
+    from .utils import get_logger, save_to_json, setup_logging
 except ImportError:
-    from utils import save_to_json
+    from models import OpenMeteoResponse, TemperatureForecast
+    from utils import get_logger, save_to_json, setup_logging
+
+logger = get_logger(__file__)
 
 
-def fetch_weather_data() -> Dict[str, any]:
+def fetch_weather_data() -> Dict[str, Any]:
     """
     Fetch the maximum temperature forecast for Tokyo using the Open-Meteo API.
 
     Returns:
-        dict: A dictionary containing the date and the maximum temperature.
+        dict: A dictionary containing the date and the maximum temperature
+        (for the next day when the API returns several days).
 
     Raises:
         requests.HTTPError: If the HTTP request returned an unsuccessful status code.
         requests.RequestException: If there was a network error.
-        KeyError: If the expected data is not in the API response.
+        pydantic.ValidationError: If the expected data is not in the API response.
     """
     url = ("https://api.open-meteo.com/v1/forecast?latitude=35.6895&longitude=139.6917"
            "&daily=temperature_2m_max&timezone=Asia/Tokyo")
-    
-    pass
+
+    logger.info("Requesting Open-Meteo forecast for Tokyo")
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    daily = OpenMeteoResponse.model_validate(response.json()).daily
+    if not daily.time:
+        raise ValueError("The API response contains no forecast days.")
+    logger.debug("API returned %d forecast days", len(daily.time))
+
+    index = 1 if len(daily.time) > 1 else 0  # next day if available
+    forecast = TemperatureForecast(
+        date=daily.time[index],
+        max_temperature=daily.temperature_2m_max[index],
+    )
+    logger.info("Max temperature on %s: %s°C", forecast.date, forecast.max_temperature)
+    return forecast.model_dump()
 
 
 if __name__ == "__main__":
+    setup_logging()
     try:
-        # Fetch the weather data
-        weather_data = fetch_weather_data()
-
-        # Save the data to a JSON file
-        save_to_json(weather_data, "tokyo_weather.json")
-
-        print("Data successfully saved to tokyo_weather.json")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        save_to_json(fetch_weather_data(), "tokyo_weather.json")
+    except Exception:
+        logger.exception("Task 2 failed")

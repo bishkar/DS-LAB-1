@@ -1,13 +1,16 @@
-import csv
-from typing import Dict, List, Union, TextIO
+from typing import Any, Dict, List, TextIO, Union
 
 try:
-    from .utils import load_json
+    from .models import DailyWeather, WeatherCsvRow, WeatherReport, WeatherSummary
+    from .utils import data_path, get_logger, load_json, save_models_to_csv, setup_logging
 except ImportError:
-    from utils import load_json
+    from models import DailyWeather, WeatherCsvRow, WeatherReport, WeatherSummary
+    from utils import data_path, get_logger, load_json, save_models_to_csv, setup_logging
+
+logger = get_logger(__file__)
 
 
-def summarize_weather_data(data: List[Dict[str, any]]) -> Dict[str, float]:
+def summarize_weather_data(data: List[Dict[str, Any]]) -> Dict[str, float]:
     """
     Summarize the weather data across all days.
 
@@ -17,49 +20,51 @@ def summarize_weather_data(data: List[Dict[str, any]]) -> Dict[str, float]:
     Returns:
         dict: A summary of the key metrics across all days.
     """
-    pass
+    if not data:
+        raise ValueError("No weather data to summarize.")
+
+    days = [DailyWeather.model_validate(d).analyze() for d in data]
+    n = len(days)
+
+    def mean(attr: str) -> float:
+        return sum(getattr(d, attr) for d in days) / n
+
+    def count(attr: str) -> int:
+        return sum(1 for d in days if getattr(d, attr))
+
+    return WeatherSummary(
+        average_max_temp=mean("max_temperature"),
+        average_min_temp=mean("min_temperature"),
+        total_precipitation=sum(d.precipitation for d in days),
+        average_wind_speed=mean("wind_speed"),
+        average_humidity=mean("humidity"),
+        hot_days=count("is_hot_day"),
+        windy_days=count("is_windy_day"),
+        rainy_days=count("is_rainy_day"),
+    ).model_dump()
 
 
-def export_to_csv(data: List[Dict[str, any]], file: Union[str, TextIO]) -> None:
+def export_to_csv(data: List[Dict[str, Any]], file: Union[str, TextIO]) -> None:
     """
-    Export the summarized weather data to a CSV file or file-like object.
+    Export the daily weather data with analysis flags to a CSV file or file-like object.
 
     Args:
         data (list of dict): The daily weather data to export.
         file (str or file-like object): The name of the CSV file to save the data in, or a file-like object.
     """
-    headers = ["Date", "Max Temperature", "Min Temperature", "Precipitation", "Wind Speed", "Humidity",
-               "Weather Description", "Is Hot Day", "Is Windy Day", "Is Rainy Day"]
-
-    def write_data(writer: csv.DictWriter) -> None:
-        """Helper function to write rows to the CSV.
-        
-        Args:
-            writer (csv.DictWriter): The CSV writer object.
-        """
-        pass
+    analyses = [DailyWeather.model_validate(d).analyze() for d in data]
+    save_models_to_csv(analyses, WeatherCsvRow, file)
 
 
 if __name__ == "__main__":
+    setup_logging()
     try:
-        # Load the JSON data
-        import os
-        # Get the directory where this script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        json_path = os.path.join(script_dir, "tokyo_weather_complex.json")
-        weather_data = load_json(json_path)
+        report = WeatherReport.model_validate(load_json(data_path("tokyo_weather_complex.json")))
+        daily = [day.model_dump() for day in report.daily]
 
-        # Summarize the weather data
-        summary = summarize_weather_data(weather_data['daily'])
+        for key, value in summarize_weather_data(daily).items():
+            logger.info("Summary %s: %s", key, value)
 
-        # Print the summary for verification
-        print("Weather Data Summary:")
-        for key, value in summary.items():
-            print(f"{key}: {value}")
-
-        # Export the summarized data to a CSV file
-        export_to_csv(weather_data['daily'], "tokyo_weather_summary.csv")
-
-        print("Data successfully exported to tokyo_weather_summary.csv")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        export_to_csv(daily, "tokyo_weather_summary.csv")
+    except Exception:
+        logger.exception("Task 4 failed")

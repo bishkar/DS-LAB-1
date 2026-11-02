@@ -1,9 +1,17 @@
 import xml.etree.ElementTree as ET
-import csv
-from typing import List, Dict
+from typing import Any, Dict, List
+
+try:
+    from .models import XmlWeatherDay
+    from .utils import data_path, get_logger, save_models_to_csv, setup_logging
+except ImportError:
+    from models import XmlWeatherDay
+    from utils import data_path, get_logger, save_models_to_csv, setup_logging
+
+logger = get_logger(__file__)
 
 
-def parse_weather_xml(xml_file: str) -> List[Dict[str, any]]:
+def parse_weather_xml(xml_file: str) -> List[Dict[str, Any]]:
     """
     Parse weather data from an XML file.
 
@@ -16,11 +24,20 @@ def parse_weather_xml(xml_file: str) -> List[Dict[str, any]]:
     Raises:
         FileNotFoundError: If the XML file does not exist.
         ET.ParseError: If the XML file is malformed.
+        pydantic.ValidationError: If a <day> element has missing or invalid values.
     """
-    pass
+    with open(xml_file, "r", encoding="utf-8") as f:
+        root = ET.fromstring(f.read())
+
+    days = [
+        XmlWeatherDay.model_validate({child.tag: (child.text or "").strip() for child in day}).model_dump()
+        for day in root.findall("day")
+    ]
+    logger.info("Parsed %d days from %s", len(days), xml_file)
+    return days
 
 
-def save_to_csv(data: List[Dict[str, any]], filename: str = "parsed_weather_data.csv") -> None:
+def save_to_csv(data: List[Dict[str, Any]], filename: str = "parsed_weather_data.csv") -> None:
     """
     Save parsed weather data to a CSV file.
 
@@ -31,20 +48,12 @@ def save_to_csv(data: List[Dict[str, any]], filename: str = "parsed_weather_data
     Raises:
         IOError: If there is an error writing to the file.
     """
-    pass
+    save_models_to_csv(data, XmlWeatherDay, filename)
 
 
 if __name__ == "__main__":
+    setup_logging()
     try:
-        # Parse the XML file
-        import os
-        # Get the directory where this script is located
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        xml_path = os.path.join(script_dir, "weather_data.xml")
-        weather_data = parse_weather_xml(xml_path)
-
-        # Save the parsed data to a CSV file
-        save_to_csv(weather_data)
-        print("Data has been successfully parsed and saved to parsed_weather_data.csv.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        save_to_csv(parse_weather_xml(data_path("weather_data.xml")))
+    except Exception:
+        logger.exception("Task 5 failed")

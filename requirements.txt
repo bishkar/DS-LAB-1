@@ -5,4 +5,5 @@ pytest~=8.3.2
 streamlit>=1.28.0
 plotly>=5.18.0
 pandas>=2.1.0
+pydantic>=2.7,<3
 # Note: xml.etree.ElementTree is part of Python standard library, no additional package needed
