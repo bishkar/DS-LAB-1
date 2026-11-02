@@ -1,0 +1,100 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Create virtual environment and install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Test Task 1 - Web Scraping
+      id: test-task1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 1 - Web Scraping
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_task1_scrape.py -v
+        timeout: 10
+        max-score: 15
+    - name: Test Task 2 - API Data Collection
+      id: test-task2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 2 - API Data Collection
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_fetch_tokyo_weather.py -v
+        timeout: 10
+        max-score: 15
+    - name: Test Task 3 - Weather Analysis
+      id: test-task3
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 3 - Weather Analysis
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_complex_weather_analysis.py -v
+        timeout: 10
+        max-score: 20
+    - name: Test Task 4 - CSV Export
+      id: test-task4
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 4 - CSV Export
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_weather_summary_export.py -v
+        timeout: 10
+        max-score: 15
+    - name: Test Task 5 - XML Parsing
+      id: test-task5
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 5 - XML Parsing
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_xml_parsing.py -v
+        timeout: 10
+        max-score: 15
+    - name: Test Task 6 - Regex Extraction
+      id: test-task6
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Task 6 - Regex Extraction
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_regex_extraction.py -v
+        timeout: 10
+        max-score: 10
+    - name: Test Utils Module
+      id: test-utils
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Test Utils Module
+        setup-command: ''
+        command: source venv/bin/activate && python -m pytest tests/test_utils.py -v
+        timeout: 10
+        max-score: 10
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TEST-TASK1_RESULTS: "${{steps.test-task1.outputs.result}}"
+        TEST-TASK2_RESULTS: "${{steps.test-task2.outputs.result}}"
+        TEST-TASK3_RESULTS: "${{steps.test-task3.outputs.result}}"
+        TEST-TASK4_RESULTS: "${{steps.test-task4.outputs.result}}"
+        TEST-TASK5_RESULTS: "${{steps.test-task5.outputs.result}}"
+        TEST-TASK6_RESULTS: "${{steps.test-task6.outputs.result}}"
+        TEST-UTILS_RESULTS: "${{steps.test-utils.outputs.result}}"
+      with:
+        runners: test-task1,test-task2,test-task3,test-task4,test-task5,test-task6,test-utils
