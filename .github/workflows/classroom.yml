@@ -29,7 +29,7 @@ jobs:
       with:
         test-name: Test Task 1 - Web Scraping
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_task1_scrape.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_task1_scrape.py -v
         timeout: 10
         max-score: 15
     - name: Test Task 2 - API Data Collection
@@ -38,7 +38,7 @@ jobs:
       with:
         test-name: Test Task 2 - API Data Collection
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_fetch_tokyo_weather.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_fetch_tokyo_weather.py -v
         timeout: 10
         max-score: 15
     - name: Test Task 3 - Weather Analysis
@@ -47,7 +47,7 @@ jobs:
       with:
         test-name: Test Task 3 - Weather Analysis
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_complex_weather_analysis.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_complex_weather_analysis.py -v
         timeout: 10
         max-score: 20
     - name: Test Task 4 - CSV Export
@@ -56,7 +56,7 @@ jobs:
       with:
         test-name: Test Task 4 - CSV Export
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_weather_summary_export.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_weather_summary_export.py -v
         timeout: 10
         max-score: 15
     - name: Test Task 5 - XML Parsing
@@ -65,7 +65,7 @@ jobs:
       with:
         test-name: Test Task 5 - XML Parsing
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_xml_parsing.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_xml_parsing.py -v
         timeout: 10
         max-score: 15
     - name: Test Task 6 - Regex Extraction
@@ -74,7 +74,7 @@ jobs:
       with:
         test-name: Test Task 6 - Regex Extraction
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_regex_extraction.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_regex_extraction.py -v
         timeout: 10
         max-score: 10
     - name: Test Utils Module
@@ -83,7 +83,7 @@ jobs:
       with:
         test-name: Test Utils Module
         setup-command: ''
-        command: source venv/bin/activate && python -m pytest tests/test_utils.py -v
+        command: . venv/bin/activate && python -m pytest tests/test_utils.py -v
         timeout: 10
         max-score: 10
     - name: Autograding Reporter
